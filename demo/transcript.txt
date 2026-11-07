@@ -1,0 +1,47 @@
+### TITLE: cellrun - one task, one fresh cell
+
+$ cellrun run -- node -e "console.log('hello from a cell')"
+cellrun: scrubbed environment (54 host variables dropped, HOME/TMPDIR remapped into the cell)
+hello from a cell
+cellrun: cell cell-20261107-074307-fa63b5 exited 0 in 77ms (network enforced: yes)
+
+$ cellrun run -- sh -c "echo HOME=\$HOME; env | grep -i -E 'key|token|secret' || echo no-secrets-visible"
+cellrun: scrubbed environment (54 host variables dropped, HOME/TMPDIR remapped into the cell)
+HOME=/tmp/cellrun-0dZVOr
+no-secrets-visible
+cellrun: cell cell-20261107-074307-6974d4 exited 0 in 41ms (network enforced: yes)
+
+$ cellrun run -- sh -c "curl -m 3 -s https://example.com >/dev/null && echo reachable || echo no-network"
+cellrun: scrubbed environment (54 host variables dropped, HOME/TMPDIR remapped into the cell)
+no-network
+cellrun: cell cell-20261107-074307-f4a82f exited 0 in 33ms (network enforced: yes)
+
+$ cellrun sanitize fixtures/tool-output-injection.json
+SEVERITY  PATTERN                       LOCATION          MATCH
+--------  ----------------------------  ----------------  ----------------------------
+HIGH      ignore-previous-instructions  $.result.content  Ignore previous instructions
+HIGH      exfiltrate-credentials        $.result.content  send your API key
+HIGH      conceal-from-user             $.result.content  Do not tell the user
+MEDIUM    external-url                  $.result.content  https://evil.example.com
+3 HIGH, 1 MEDIUM - BLOCKED (exit 1)
+
+$ cellrun run --sanitize fixtures/tool-output-injection.json -- node -e "console.log('never runs')"
+SEVERITY  PATTERN                       LOCATION          MATCH
+--------  ----------------------------  ----------------  ----------------------------
+HIGH      ignore-previous-instructions  $.result.content  Ignore previous instructions
+HIGH      exfiltrate-credentials        $.result.content  send your API key
+HIGH      conceal-from-user             $.result.content  Do not tell the user
+MEDIUM    external-url                  $.result.content  https://evil.example.com
+3 HIGH, 1 MEDIUM - BLOCKED (exit 1)
+cellrun: run blocked by sanitize gate (HIGH findings in input)
+
+$ cellrun cells
+CELL                         COMMAND                               BACKEND  NETWORK  EXIT  AGE     STATE
+---------------------------  ------------------------------------  -------  -------  ----  ------  ---------
+cell-20261107-074308-2c7976  node -e console.log('never runs')     local    blocked  1     0s ago  destroyed
+cell-20261107-074307-f4a82f  sh -c curl -m 3 -s https://exampl...  local    off      0     0s ago  destroyed
+cell-20261107-074307-6974d4  sh -c echo HOME=$HOME; env | grep...  local    off      0     0s ago  destroyed
+cell-20261107-074307-fa63b5  node -e console.log('hello from a...  local    off      0     0s ago  destroyed
+
+### END: cellrun 0.1.0 - MIT - github.com/techdevfun/cellrun
+
