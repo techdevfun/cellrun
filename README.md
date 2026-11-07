@@ -5,7 +5,7 @@ with a scrubbed environment and the network off by default, then destroy
 the cell. Sanitize tool / MCP / web output for instruction injection
 before it enters agent context. Every run leaves an audit record.
 
-Install from source for now — the npm package is not published yet.
+Install from source for now - the npm package is not published yet.
 
 ```bash
 git clone https://github.com/techdevfun/cellrun.git
