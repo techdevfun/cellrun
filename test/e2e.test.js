@@ -5,6 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { namespacesAvailable } from "../dist/run.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURES = join(ROOT, "fixtures");
@@ -35,14 +36,17 @@ test("e2e: run writes a file, audit records it, cell is destroyed", async () => 
     env,
   );
   assert.equal(r.code, 0);
-  assert.match(r.stderr, /network enforced: yes/);
+  // Enforcement is environment-dependent: user namespaces exist on a
+  // typical Linux dev machine but NOT on GitHub Actions runners, where
+  // the tool degrades with a warning and records networkEnforced: false.
+  assert.match(r.stderr, /network enforced: (yes|no)/);
   const audit = await runCli(["audit", "--format", "json"], env);
   assert.equal(audit.code, 0);
   const entries = JSON.parse(audit.stdout);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].exitCode, 0);
   assert.equal(entries[0].network, "off");
-  assert.equal(entries[0].networkEnforced, true);
+  assert.equal(entries[0].networkEnforced, namespacesAvailable());
   assert.ok(entries[0].filesCreated.includes("out.txt"));
   assert.equal(existsSync(entries[0].cellDir), true);
   rmSync(entries[0].cellDir, { recursive: true, force: true });
