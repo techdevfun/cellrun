@@ -5,8 +5,14 @@ with a scrubbed environment and the network off by default, then destroy
 the cell. Sanitize tool / MCP / web output for instruction injection
 before it enters agent context. Every run leaves an audit record.
 
+Install from source for now — the npm package is not published yet.
+
 ```bash
-npm install -g cellrun
+git clone https://github.com/techdevfun/cellrun.git
+cd cellrun
+npm install
+npm run build
+npm link   # or run it directly: node dist/cli.js
 
 # Run a task in a fresh cell (network off, env scrubbed, cell destroyed on exit)
 cellrun run -- node -e "console.log('hello from a cell')"
@@ -94,7 +100,7 @@ cellrun cells [--format table|json]
 
 `ulimit -v` counts **virtual** memory, and Node needs about 2 GB of
 address space just to start. A `--memory` value below 2048 will break
-Node tasks outright (the process dies at startup, exit 133). The flag
+Node tasks outright (the process dies at startup, exit 2). The flag
 is opt-in for that reason, and values below 2048 print a warning. The
 limit is a guardrail against runaway allocation, not a sandbox.
 
