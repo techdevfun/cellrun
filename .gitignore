@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.quarantined
+.cellrun/
+demo/bin/
+demo/.cellrun-home/
