@@ -86,15 +86,24 @@ function scanChunk(
   findings: SanitizeFinding[],
 ): void {
   for (const pattern of PATTERNS) {
-    const re = new RegExp(pattern.regex.source, pattern.regex.flags);
-    const m = re.exec(text);
-    if (m) {
+    // Report every match, not just the first: one chunk can contain the
+    // same injection twice, and the quarantine redaction keys off this
+    // list — a missed second occurrence used to survive redaction.
+    const flags = pattern.regex.flags.includes("g")
+      ? pattern.regex.flags
+      : `${pattern.regex.flags}g`;
+    const re = new RegExp(pattern.regex.source, flags);
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
       findings.push({
         pattern: pattern.id,
         severity: pattern.severity,
         location,
         match: m[0],
       });
+      // Guard against an empty match looping forever (no current
+      // pattern can match empty, this is belt-and-braces).
+      if (m[0].length === 0) re.lastIndex++;
     }
   }
   // External URLs: flagged MEDIUM unless the host is allowlisted.
@@ -165,13 +174,16 @@ export function scanFile(file: string, allowHosts: string[]): SanitizeResult {
   return { file, findings, high, medium, clean: findings.length === 0 };
 }
 
-/** Replace each finding's matched span with [REDACTED] (first occurrence each). */
+/** Replace every occurrence of each finding's matched span with [REDACTED]. */
 export function redactContent(content: string, findings: SanitizeFinding[]): string {
   let out = content;
   for (const finding of findings) {
-    const idx = out.indexOf(finding.match);
-    if (idx === -1) continue;
-    out = out.slice(0, idx) + "[REDACTED]" + out.slice(idx + finding.match.length);
+    // Replace ALL occurrences, not just the first: findings are recorded
+    // per line, so a second copy of the same span later in the file used
+    // to survive quarantine untouched — a rescan of the quarantined file
+    // still flagged it HIGH.
+    if (finding.match.length === 0) continue;
+    out = out.split(finding.match).join("[REDACTED]");
   }
   return out;
 }
