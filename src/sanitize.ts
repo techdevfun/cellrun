@@ -88,7 +88,7 @@ function scanChunk(
   for (const pattern of PATTERNS) {
     // Report every match, not just the first: one chunk can contain the
     // same injection twice, and the quarantine redaction keys off this
-    // list — a missed second occurrence used to survive redaction.
+    // list - a missed second occurrence used to survive redaction.
     const flags = pattern.regex.flags.includes("g")
       ? pattern.regex.flags
       : `${pattern.regex.flags}g`;
@@ -180,7 +180,7 @@ export function redactContent(content: string, findings: SanitizeFinding[]): str
   for (const finding of findings) {
     // Replace ALL occurrences, not just the first: findings are recorded
     // per line, so a second copy of the same span later in the file used
-    // to survive quarantine untouched — a rescan of the quarantined file
+    // to survive quarantine untouched - a rescan of the quarantined file
     // still flagged it HIGH.
     if (finding.match.length === 0) continue;
     out = out.split(finding.match).join("[REDACTED]");
